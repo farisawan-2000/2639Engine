@@ -1,3 +1,5 @@
+using namespace std;
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -10,7 +12,8 @@
 
 #include "game_init.hpp"
 
-#include "include/2639types.h"
+#include "2639types.h"
+#include <vector>
 
 void VulkanWindow2639::instanceMake() {
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -28,8 +31,44 @@ void VulkanWindow2639::instanceMake() {
     VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
 }
 
+void VulkanWindow2639::chooseGraphicsCard() {
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+    if (deviceCount == 0) {
+        throw runtime_error("This game won't run on your system. Update your graphics driver or get a better PC");
+    }
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+    for (const auto& device : devices) {
+        VkPhysicalDeviceProperties deviceProperties;
+        VkPhysicalDeviceFeatures deviceFeatures;
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+        if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+               deviceFeatures.geometryShader)
+        {
+            mPhysicalDevice = device;
+        }
+    }
+}
+
+// public
+
 void VulkanWindow2639::makeWindow(const char *name, u32 w, u32 h) {
-    window = glfwCreateWindow(w, h, name, nullptr, nullptr);
+    glfwInit();
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+    mWindow = glfwCreateWindow(w, h, name, nullptr, nullptr);
+}
+
+void VulkanWindow2639::windowLoop() {
+    while(!glfwWindowShouldClose(mWindow)) {
+        glfwPollEvents();
+    }
 }
 
 void VulkanWindow2639::initialize() {
@@ -41,12 +80,13 @@ void VulkanWindow2639::initialize() {
     appInfo.apiVersion = VK_API_VERSION_1_0;
 
     instanceMake();
+    chooseGraphicsCard();
 }
 
 void VulkanWindow2639::finish() {
     vkDestroyInstance(instance, nullptr);
 
-    glfwDestroyWindow(window);
+    glfwDestroyWindow(mWindow);
 
     glfwTerminate();
 }

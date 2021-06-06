@@ -8,28 +8,16 @@
 
 #include <iostream>
 
+#include "2639types.h"
+#include "game_init.hpp"
+
 int main() {
-    glfwInit();
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Vulkan window", nullptr, nullptr);
-
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-    printf("%d ext. supported", extensionCount);
-
-    glm::mat4 matrix;
-    glm::vec4 vec;
-    auto test = matrix * vec;
-
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
-    }
-
-    glfwDestroyWindow(window);
-
-    glfwTerminate();
+    VulkanWindow2639 w;
+    
+    w.initialize();
+    w.makeWindow("Game name", 800, 600);
+    w.windowLoop();
+    w.finish();
 
     return 0;
 }
